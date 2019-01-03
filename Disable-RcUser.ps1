@@ -10,28 +10,46 @@ Function Disable-RcUser {
 
 	[CmdletBinding()]
 	Param (
-		# Email address for the user to disable
+		# Email address of the user to disable
 		[Parameter(Mandatory)]
 		[string]
-		$UserEmail
-	)
+		$UserEmail,
 		
-	$production = $true 
-	# This section can be duplicated to use with your sandbox. Then set $production to $false to enable sandbox testing
-	$KeyPath = "Path to AES key here"
-	$PasswordPath = "Path to password encrypted with above key"
-	$app_id = "App ID for your app in RingCentral dev"
-	$app_key = "App key for your app in RingCentral dev"
-	$username = "RingCentral username for app in production"
-	$securePassword = Get-Content $PasswordPath | ConvertTo-SecureString -Key (Get-Content $KeyPath)
-	$BSTR = [System.Runtime.InteropServices.Marshal]::SecureStringToBSTR($SecurePassword)
-	$UnsecurePassword = [System.Runtime.InteropServices.Marshal]::PtrToStringAuto($BSTR)
-	$password = $UnsecurePassword
-	# OAuthClientID is always the same, but im leaving the following lines to show how its created
-	$bytes = [system.text.encoding]::UTF8.GetBytes($app_id+":"+$app_key)
-	$OAuthClientID = [system.convert]::ToBase64string($bytes)
-
-	# RC API Authorization
+		# This can be run against your dev app by using this switch
+		[switch]
+		$Sandbox
+	)
+	
+	# Runs against your production app if Sandbox isnt specified
+	If (-not ($Sandbox)) {
+		# Production
+		$production = $true
+		$KeyPath = "Path to AES key here"
+		$PasswordPath = "Path to password encrypted with above key"
+		$app_id = "App ID for your production app in RingCentral dev"
+		$app_key = "App key for your production app in RingCentral dev"
+		$username = "Username for production app"
+		$securePassword = Get-Content $PasswordPath | ConvertTo-SecureString -Key (Get-Content $KeyPath)
+		$BSTR = [System.Runtime.InteropServices.Marshal]::SecureStringToBSTR($SecurePassword)
+		$UnsecurePassword = [System.Runtime.InteropServices.Marshal]::PtrToStringAuto($BSTR)
+		$password = $UnsecurePassword
+		# OAuthClientID is always the same, but im leaving the following lines to show how its created
+		$bytes = [system.text.encoding]::UTF8.GetBytes($app_id+":"+$app_key)
+		$OAuthClientID = [system.convert]::ToBase64string($bytes)
+	}
+	Else {
+		# Sandbox
+		# I dont guard the sandbox creds as  carefully as production
+		$app_id = "App ID for your sandbox app in RingCentral dev"
+		$app_key = "App key for your sandbox app in RingCentral dev"
+		$username = "Username for sandbox app"
+		$password = "Password for sandbox app"
+		# OAuthClientID is always the same, but im leaving the following lines to show how its created
+		$bytes = [system.text.encoding]::UTF8.GetBytes($app_id+":"+$app_key)
+		$OAuthClientID = [system.convert]::ToBase64string($bytes)
+	}
+	
+	# RC API AUTHORIZATION
 	$body = @{
 		grant_type = "password"
 		username = $username
@@ -43,9 +61,9 @@ Function Disable-RcUser {
 	$auth_token = $authorization
 	# END API AUTHORIZATION
 	
-	# We are going to see if the user exists in RC first, so get all the extensions to search them later
-	# URI to get all extensions
+	# We are going to see if the user exists in RC first, so get all the active extensions to search them later
 	Write-Host "Checking if $UserEmail exists in RingCentral" -fore cyan
+	# URI to get all extensions
 	$apiuri = "https://platform.ringcentral.com/restapi/v1.0/account/~/extension/"
 	$query = Invoke-RestMethod -Uri $apiuri -Headers @{"Authorization" = $auth_token}
 	$totalPages = $query.paging.totalPages
@@ -89,6 +107,7 @@ Function Disable-RcUser {
 		$updateQuery = Invoke-RestMethod -Uri $apiuri -ContentType "application/json" -Body $body -Headers @{"Authorization" = $auth_token} -Method Put
 	}
 	Else {
-		Write-Host "Nope"
+		# User email specified not found in RingCentral
+		Write-Host "$UserEmail not found"
 	}
 }
