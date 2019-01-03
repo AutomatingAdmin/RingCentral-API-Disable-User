@@ -85,7 +85,7 @@ Function Disable-RcUser {
 	
 	# If the user is found in RC, then process changes
 	If ($data.email -contains $UserEmail) {
-	Write-Host "RingCentral account found - disabling now" -fore green
+		Write-Host "RingCentral account found - disabling now" -fore green
 		$extensionId = ($data | where email -eq $UserEmail).id
 		$status = ($data | where email -eq $UserEmail).status
 		$apiuri = "https://platform.ringcentral.com/restapi/v1.0/account/~/extension/$extensionId"
