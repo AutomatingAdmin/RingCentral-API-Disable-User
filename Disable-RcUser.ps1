@@ -15,7 +15,7 @@ Function Disable-RcUser {
 		[string]
 		$UserEmail,
 		
-		# This can be run against your dev app by using this switch
+		# This can be run against your sandbox app by using this switch
 		[switch]
 		$Sandbox
 	)
