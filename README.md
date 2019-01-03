@@ -15,3 +15,14 @@ The credentials for your sandbox are not treated as securely and can be entered 
 Though you can use the same key method if desired by using the same process.<br/>
 
 ## Usage
+To use with your production app:
+
+````powershell
+Disable-RcUser -UserEmail someone@domain.com
+````
+
+To use with your sandbox app:
+
+````powershell
+Disable-RcUser -UserEmail someone@domain.com -Sandbox
+````
